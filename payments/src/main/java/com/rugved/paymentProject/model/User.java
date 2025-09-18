@@ -50,7 +50,7 @@ public class User {
     private String phone;
 
     @NotBlank
-    @Size(max = 15)
+    @Size(max = 150)
     private String password;
 
     @Builder.Default

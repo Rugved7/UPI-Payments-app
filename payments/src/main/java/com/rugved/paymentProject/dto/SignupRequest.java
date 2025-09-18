@@ -16,7 +16,7 @@ public class SignupRequest {
 
     @NotBlank(message = "First Name is Required")
     @Size(max = 50, message = "First name should be less than 50 Characters")
-    private String Firstname;
+    private String firstname;
 
 
     @NotBlank(message = "Last Name is Required")
