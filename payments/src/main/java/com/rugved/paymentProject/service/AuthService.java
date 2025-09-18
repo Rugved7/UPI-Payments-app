@@ -1,4 +1,4 @@
-package com.rugved.paymentProject.security;
+package com.rugved.paymentProject.service;
 
 import com.rugved.paymentProject.dto.SignupRequest;
 import com.rugved.paymentProject.model.User;

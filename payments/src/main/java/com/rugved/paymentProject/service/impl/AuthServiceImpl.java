@@ -1,4 +1,4 @@
-package com.rugved.paymentProject.security.impl;
+package com.rugved.paymentProject.service.impl;
 
 import com.rugved.paymentProject.dto.SignupRequest;
 import com.rugved.paymentProject.model.ERole;
@@ -6,7 +6,7 @@ import com.rugved.paymentProject.model.Role;
 import com.rugved.paymentProject.model.User;
 import com.rugved.paymentProject.repository.RoleRepository;
 import com.rugved.paymentProject.repository.UserRepository;
-import com.rugved.paymentProject.security.AuthService;
+import com.rugved.paymentProject.service.AuthService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;

@@ -2,7 +2,7 @@ package com.rugved.paymentProject.controller;
 
 import com.rugved.paymentProject.dto.ApiResponse;
 import com.rugved.paymentProject.dto.SignupRequest;
-import com.rugved.paymentProject.security.AuthService;
+import com.rugved.paymentProject.service.AuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
