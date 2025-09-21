@@ -10,11 +10,9 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 @RestController
@@ -38,4 +36,39 @@ public class TransactionController {
                 });
     }
 
+    @GetMapping("/{transactionId}")
+    public ResponseEntity<ApiResponse> getTransactionId(@PathVariable String transactionId,
+                                                        @AuthenticationPrincipal UserPrincipal userPrincipal) {
+
+        try {
+            TransactionResponse transaction = transactionService.getTransaction(transactionId, userPrincipal.getId());
+            return ResponseEntity.ok(ApiResponse.success("Transaction retireved", transaction));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
+
+    @GetMapping("/history")
+    public ResponseEntity<ApiResponse> getTransactionHistory(@AuthenticationPrincipal UserPrincipal userprincipal) {
+        try {
+            List<TransactionResponse> transactions = transactionService.getUserTransactions(userprincipal.getId());
+            return ResponseEntity.ok(ApiResponse.success("Transaction history retrieved", transactions));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
+
+    @GetMapping("/status/{transactionId}")
+    public ResponseEntity<ApiResponse> getTransactionStatus(@PathVariable String transactionId,
+                                                            @AuthenticationPrincipal UserPrincipal userPrincipal) {
+        try {
+            TransactionResponse transaction = transactionService.getTransaction(transactionId, userPrincipal.getId());
+            return ResponseEntity.ok(ApiResponse.success("Transaction Status", new TransactionStatusResponse(transaction.getTransactionId(), transaction.getStatus())));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
+
+    private record TransactionStatusResponse(String transactionId, Transaction.TransactionStatus status) {
+    }
 }
