@@ -24,7 +24,12 @@ public class UPIPinServiceImpl implements UPIPinService {
         if (upiPin.length() != 4 || !upiPin.matches("\\d{4}")) {
             throw new RuntimeException("UPI Pin must be 4 digits");
         }
-        user.setPassword(passwordEncoder.encode(upiPin));
+
+        if (user.getUpiPinHash() != null) {
+            throw new RuntimeException("UPI Pin already set. Use change PIN endpoint to update.");
+        }
+
+        user.setUpiPinHash(passwordEncoder.encode(upiPin));
         userRepository.save(user);
     }
 
@@ -33,18 +38,32 @@ public class UPIPinServiceImpl implements UPIPinService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        return passwordEncoder.matches(upiPin, user.getPassword());
+        if (user.getUpiPinHash() == null) {
+            throw new RuntimeException("UPI Pin not set. Please set your UPI Pin first.");
+        }
+
+        return passwordEncoder.matches(upiPin, user.getUpiPinHash());
     }
 
     @Override
     @Transactional
     public void changeUPIPin(Long userId, String oldPin, String newPin) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        if (user.getUpiPinHash() == null) {
+            throw new RuntimeException("UPI Pin not set. Please set your UPI Pin first.");
+        }
+
         if (!validateUPIPin(userId, oldPin)) {
             throw new RuntimeException("Invalid current UPI Pin");
         }
+
         if (newPin.length() != 4 || !newPin.matches("\\d{4}")) {
             throw new RuntimeException("New UPI Pin must be 4 digits");
         }
-        setUPIPin(userId, newPin);
+
+        user.setUpiPinHash(passwordEncoder.encode(newPin));
+        userRepository.save(user);
     }
 }

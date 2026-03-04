@@ -55,6 +55,10 @@ public class User {
     @Size(max = 150)
     private String password;
 
+    @Size(max = 150)
+    @Column(name = "upi_pin_hash")
+    private String upiPinHash;
+
     @Builder.Default
     @Column(name = "is_verified")
     private Boolean isVerified = false;
