@@ -352,7 +352,7 @@ Rugved
 
 ##  Support
 
-For support, email your-email@example.com or create an issue in the repository.
+For support, email rugvedagasti7@gmail.com or create an issue in the repository.
 
 ---
 
