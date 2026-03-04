@@ -1,5 +1,6 @@
 package com.rugved.paymentProject.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
@@ -28,7 +29,7 @@ public class VirtualPaymentAddress  {
 
     @NotBlank
     @Size(min = 3, max = 50)
-    @Pattern(regexp = "^[a-zA-Z0-9._-]+$", message = "VPA can only contain letters, numbers, dots, underscores and hyphens")
+    @Pattern(regexp = "^[a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+$", message = "VPA format should be username@bank")
     @Column(unique = true, nullable = false)
     private String vpa;
 
@@ -40,10 +41,12 @@ public class VirtualPaymentAddress  {
     @Column(name = "is_verified")
     private Boolean isVerified = true;
 
+    @JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
     private User user;
 
+    @JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "wallet_id")
     private Wallet wallet;

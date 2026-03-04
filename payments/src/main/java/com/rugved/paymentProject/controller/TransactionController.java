@@ -13,7 +13,6 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 
 @RestController
 @RequestMapping("/api/v1/transaction")
@@ -23,17 +22,19 @@ public class TransactionController {
     private final TransactionService transactionService;
 
     @PostMapping("/transfer")
-    public CompletableFuture<ResponseEntity<ApiResponse>> initiateTransfer(@Valid @RequestBody TransactionRequest request,
-                                                                           @AuthenticationPrincipal UserPrincipal userPrincipal) {
-
-        return transactionService.initiateTransaction(request, userPrincipal.getId())
-                .thenApply(transactionResponse -> {
-                    if (transactionResponse.getStatus() == Transaction.TransactionStatus.SUCCESS) {
-                        return ResponseEntity.ok(ApiResponse.success("Transaction completed successfully", transactionResponse));
-                    } else {
-                        return ResponseEntity.badRequest().body(ApiResponse.error("Transaction failed : " + transactionResponse.getDescription()));
-                    }
-                });
+    public ResponseEntity<ApiResponse> initiateTransfer(@Valid @RequestBody TransactionRequest request,
+                                                        @AuthenticationPrincipal UserPrincipal userPrincipal) {
+        try {
+            TransactionResponse transactionResponse = transactionService.initiateTransaction(request, userPrincipal.getId()).get();
+            
+            if (transactionResponse.getStatus() == Transaction.TransactionStatus.SUCCESS) {
+                return ResponseEntity.ok(ApiResponse.success("Transaction completed successfully", transactionResponse));
+            } else {
+                return ResponseEntity.badRequest().body(ApiResponse.error("Transaction failed: " + transactionResponse.getDescription()));
+            }
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error("Transaction failed: " + e.getMessage()));
+        }
     }
 
     @GetMapping("/{transactionId}")

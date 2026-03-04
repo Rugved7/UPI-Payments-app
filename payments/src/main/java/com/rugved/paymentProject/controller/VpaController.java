@@ -2,6 +2,7 @@ package com.rugved.paymentProject.controller;
 
 import com.rugved.paymentProject.dto.ApiResponse;
 import com.rugved.paymentProject.dto.VpaRequest;
+import com.rugved.paymentProject.dto.VpaResponse;
 import com.rugved.paymentProject.model.VirtualPaymentAddress;
 import com.rugved.paymentProject.security.UserPrincipal;
 import com.rugved.paymentProject.service.VpaService;
@@ -13,8 +14,9 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
-@Controller
+@RestController
 @RequestMapping("/api/v1/vpa")
 @RequiredArgsConstructor
 public class VpaController {
@@ -28,7 +30,8 @@ public class VpaController {
 
         try {
             VirtualPaymentAddress vpa = vpaService.createVpa(vpaRequest, userprincipal.getId());
-            return ResponseEntity.ok(ApiResponse.success("VPA Created Successfully", vpa));
+            VpaResponse response = VpaResponse.fromEntity(vpa);
+            return ResponseEntity.ok(ApiResponse.success("VPA Created Successfully", response));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
         }
@@ -37,7 +40,10 @@ public class VpaController {
     @GetMapping
     public ResponseEntity<ApiResponse> getUserVpas(@AuthenticationPrincipal UserPrincipal userprincipal) {
         List<VirtualPaymentAddress> vpas = vpaService.getUserVpas(userprincipal.getId());
-        return ResponseEntity.ok(ApiResponse.success("User VPAs Retrieved", vpas));
+        List<VpaResponse> response = vpas.stream()
+                .map(VpaResponse::fromEntity)
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(ApiResponse.success("User VPAs Retrieved", response));
     }
 
     @PatchMapping("/{vpa}/primary")
@@ -46,7 +52,8 @@ public class VpaController {
             @AuthenticationPrincipal UserPrincipal userPrincipal) {
         try {
             VirtualPaymentAddress updatedVpa = vpaService.setPrimaryVpa(vpa, userPrincipal.getId());
-            return ResponseEntity.ok(ApiResponse.success("Primary VPA updated", updatedVpa));
+            VpaResponse response = VpaResponse.fromEntity(updatedVpa);
+            return ResponseEntity.ok(ApiResponse.success("Primary VPA updated", response));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
         }

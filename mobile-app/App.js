@@ -9,6 +9,10 @@ import LoginScreen from './src/screens/LoginScreen';
 import SignupScreen from './src/screens/SignupScreen';
 import HomeScreen from './src/screens/HomeScreen';
 import SendMoneyScreen from './src/screens/SendMoneyScreen';
+import VPAManagementScreen from './src/screens/VPAManagementScreen';
+import UPIPinScreen from './src/screens/UPIPinScreen';
+import TransactionHistoryScreen from './src/screens/TransactionHistoryScreen';
+import NotificationsScreen from './src/screens/NotificationsScreen';
 
 const Stack = createStackNavigator();
 
@@ -46,6 +50,26 @@ function AppNavigator() {
               name="SendMoney" 
               component={SendMoneyScreen}
               options={{ title: 'Send Money' }}
+            />
+            <Stack.Screen 
+              name="VPAManagement" 
+              component={VPAManagementScreen}
+              options={{ title: 'My VPAs' }}
+            />
+            <Stack.Screen 
+              name="UPIPin" 
+              component={UPIPinScreen}
+              options={{ title: 'UPI PIN' }}
+            />
+            <Stack.Screen 
+              name="TransactionHistory" 
+              component={TransactionHistoryScreen}
+              options={{ title: 'Transaction History' }}
+            />
+            <Stack.Screen 
+              name="Notifications" 
+              component={NotificationsScreen}
+              options={{ title: 'Notifications' }}
             />
           </>
         )}

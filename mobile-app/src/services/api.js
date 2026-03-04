@@ -46,7 +46,14 @@ export const walletAPI = {
 
 // VPA APIs
 export const vpaAPI = {
-  create: (data) => api.post('/vpa', data),
+  create: (data) => {
+    console.log('VPA API sending:', data);
+    return api.post('/vpa', data, {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+  },
   getAll: () => api.get('/vpa'),
   setPrimary: (vpa) => api.patch(`/vpa/${vpa}/primary`),
   checkAvailability: (vpa) => api.get(`/vpa/check-availability?vpa=${vpa}`),

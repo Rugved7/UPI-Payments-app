@@ -37,20 +37,20 @@ public class VpaServiceImpl implements VpaService {
                 .orElseThrow(() -> new com.rugved.paymentProject.exception.BusinessException("Wallet not found", 
                     com.rugved.paymentProject.exception.BusinessException.ErrorCodes.WALLET_NOT_FOUND));
 
-        VirtualPaymentAddress vpa = VirtualPaymentAddress.builder()
-                .vpa(vpaRequest.getVpa())
-                .isPrimary(vpaRequest.getIsPrimary())
-                .user(user)
-                .wallet(wallet)
-                .build();
-
-        // If setting as primary, remove primary status from other VPAs
-        if (vpaRequest.getIsPrimary()) {
+        // If setting as primary, remove primary status from other VPAs first
+        if (vpaRequest.getIsPrimary() != null && vpaRequest.getIsPrimary()) {
             vpaRepository.findByUserIdAndIsPrimaryTrue(userId).ifPresent(existingPrimary -> {
                 existingPrimary.setIsPrimary(false);
                 vpaRepository.save(existingPrimary);
             });
         }
+
+        VirtualPaymentAddress vpa = new VirtualPaymentAddress();
+        vpa.setVpa(vpaRequest.getVpa());
+        vpa.setIsPrimary(vpaRequest.getIsPrimary() != null ? vpaRequest.getIsPrimary() : false);
+        vpa.setIsVerified(true);
+        vpa.setUser(user);
+        vpa.setWallet(wallet);
         
         return vpaRepository.save(vpa);
     }

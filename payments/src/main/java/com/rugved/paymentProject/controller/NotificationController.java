@@ -1,6 +1,7 @@
 package com.rugved.paymentProject.controller;
 
 import com.rugved.paymentProject.dto.ApiResponse;
+import com.rugved.paymentProject.dto.NotificationResponse;
 import com.rugved.paymentProject.model.Notification;
 import com.rugved.paymentProject.security.UserPrincipal;
 import com.rugved.paymentProject.service.NotificationService;
@@ -10,6 +11,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/v1/notifications")
@@ -21,13 +23,19 @@ public class NotificationController {
     @GetMapping
     public ResponseEntity<ApiResponse> getAllNotifications(@AuthenticationPrincipal UserPrincipal userPrincipal) {
         List<Notification> notifications = notificationService.getUserNotifications(userPrincipal.getId());
-        return ResponseEntity.ok(ApiResponse.success("Notifications retrieved", notifications));
+        List<NotificationResponse> response = notifications.stream()
+                .map(NotificationResponse::fromEntity)
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(ApiResponse.success("Notifications retrieved", response));
     }
 
     @GetMapping("/unread")
     public ResponseEntity<ApiResponse> getUnreadNotifications(@AuthenticationPrincipal UserPrincipal userPrincipal) {
         List<Notification> notifications = notificationService.getUnreadNotifications(userPrincipal.getId());
-        return ResponseEntity.ok(ApiResponse.success("Unread notifications retrieved", notifications));
+        List<NotificationResponse> response = notifications.stream()
+                .map(NotificationResponse::fromEntity)
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(ApiResponse.success("Unread notifications retrieved", response));
     }
 
     @GetMapping("/unread/count")
