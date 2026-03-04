@@ -30,38 +30,57 @@ public class TransactionServiceImpl implements TransactionService {
 
     private final TransactionRepository transactionRepository;
     private final VpaRepository vpaRepository;
-    private final BankAccountRepository bankAccountRepository;
+    private final com.rugved.paymentProject.repository.WalletRepository walletRepository;
     private final UPIPinService upiPinService;
+    private final com.rugved.paymentProject.service.NotificationService notificationService;
 
     @Override
     @Async("transactionTaskExecutor")
     @Transactional
     public CompletableFuture<TransactionResponse> initiateTransaction(TransactionRequest request, Long userId) {
         try {
-//            validate upi pin
+            // Validate UPI PIN
             if (!upiPinService.validateUPIPin(userId, request.getUpiPin())) {
-                throw new RuntimeException("Invalid UPI Pin");
+                throw new com.rugved.paymentProject.exception.BusinessException("Invalid UPI Pin", 
+                    com.rugved.paymentProject.exception.BusinessException.ErrorCodes.INVALID_UPI_PIN);
             }
-//            Get sender primary VPA and bank account
+
+            // Get sender primary VPA and wallet
             VirtualPaymentAddress senderVpa = vpaRepository.findByUserIdAndIsPrimaryTrue(userId)
-                    .orElseThrow(() -> new RuntimeException("No Primary VPA Found"));
+                    .orElseThrow(() -> new com.rugved.paymentProject.exception.BusinessException("No Primary VPA Found", 
+                        com.rugved.paymentProject.exception.BusinessException.ErrorCodes.PRIMARY_VPA_NOT_FOUND));
 
-            BankAccount senderAccount = senderVpa.getBankAccount();
-            if (senderAccount == null) {
-                throw new RuntimeException("No bank account linked with VPA");
+            var senderWallet = walletRepository.findByUserIdWithLock(userId)
+                    .orElseThrow(() -> new com.rugved.paymentProject.exception.BusinessException("Wallet not found", 
+                        com.rugved.paymentProject.exception.BusinessException.ErrorCodes.WALLET_NOT_FOUND));
+
+            // Get receiver's VPA
+            VirtualPaymentAddress receiverVpa = vpaRepository.findByVpa(request.getRecieverVpa())
+                    .orElseThrow(() -> new com.rugved.paymentProject.exception.BusinessException("Receiver VPA not found", 
+                        com.rugved.paymentProject.exception.BusinessException.ErrorCodes.VPA_NOT_FOUND));
+
+            // Validate transaction limits and balance
+            if (!senderWallet.canTransact(request.getAmount())) {
+                if (!senderWallet.getIsActive()) {
+                    throw new com.rugved.paymentProject.exception.BusinessException("Wallet is inactive", 
+                        com.rugved.paymentProject.exception.BusinessException.ErrorCodes.WALLET_INACTIVE);
+                }
+                if (senderWallet.getBalance().compareTo(request.getAmount()) < 0) {
+                    throw new com.rugved.paymentProject.exception.BusinessException("Insufficient balance", 
+                        com.rugved.paymentProject.exception.BusinessException.ErrorCodes.INSUFFICIENT_BALANCE);
+                }
+                if (request.getAmount().compareTo(senderWallet.getPerTransactionLimit()) > 0) {
+                    throw new com.rugved.paymentProject.exception.BusinessException("Transaction limit exceeded. Max: ₹" + senderWallet.getPerTransactionLimit(), 
+                        com.rugved.paymentProject.exception.BusinessException.ErrorCodes.TRANSACTION_LIMIT_EXCEEDED);
+                }
+                if (senderWallet.getDailySpent().add(request.getAmount()).compareTo(senderWallet.getDailyLimit()) > 0) {
+                    throw new com.rugved.paymentProject.exception.BusinessException("Daily limit exceeded. Remaining: ₹" + 
+                        senderWallet.getDailyLimit().subtract(senderWallet.getDailySpent()), 
+                        com.rugved.paymentProject.exception.BusinessException.ErrorCodes.DAILY_LIMIT_EXCEEDED);
+                }
             }
-//            Get Reciever's VPA
-            VirtualPaymentAddress reciverVPA = vpaRepository.findByVpa(request.getRecieverVpa())
-                    .orElseThrow(() -> new RuntimeException("Receiver VPA not found"));
 
-//            Check sufficient balance
-            BankAccount senderAccountLocked = bankAccountRepository.findById(senderAccount.getId())
-                    .orElseThrow(() -> new RuntimeException("Sender account not found"));
-
-            if (senderAccountLocked.getBalance().compareTo(request.getAmount()) < 0) {
-                throw new RuntimeException("Insufficient Balance");
-            }
-//            create Transaction record
+            // Create transaction record
             Transaction transaction = Transaction.builder()
                     .transactionId(generateTransactionId())
                     .type(Transaction.TransactionType.P2P_TRANSFER)
@@ -69,42 +88,69 @@ public class TransactionServiceImpl implements TransactionService {
                     .amount(request.getAmount())
                     .description(request.getDescription())
                     .sender(senderVpa.getUser())
-                    .receiver(reciverVPA.getUser())
+                    .receiver(receiverVpa.getUser())
                     .senderVpa(senderVpa.getVpa())
-                    .receiverVpa(reciverVPA.getVpa())
+                    .receiverVpa(receiverVpa.getVpa())
                     .build();
 
             transaction = transactionRepository.save(transaction);
 
-//            Perform Fund Transfer (atomic operation)
-            performFundTransfer(senderAccountLocked, reciverVPA, request.getAmount());
+            // Perform fund transfer
+            performFundTransfer(senderWallet, receiverVpa, request.getAmount());
 
-//            update status
+            // Update status
             transaction.setStatus(Transaction.TransactionStatus.SUCCESS);
             transactionRepository.save(transaction);
 
-            return CompletableFuture.completedFuture(TransactionResponse.fromTransaction(transaction));
-        } catch (Exception E) {
-            log.error("Transaction Failed: {}", E.getMessage());
-//            failed transaction
-            Transaction failedTransaction = createFailedTransaction(request, userId, E.getMessage());
+            // Send notifications
+            notificationService.createNotification(
+                userId,
+                "Money Sent",
+                "₹" + request.getAmount() + " sent to " + request.getRecieverVpa(),
+                com.rugved.paymentProject.model.Notification.NotificationType.MONEY_SENT,
+                transaction.getTransactionId()
+            );
 
+            notificationService.createNotification(
+                receiverVpa.getUser().getId(),
+                "Money Received",
+                "₹" + request.getAmount() + " received from " + senderVpa.getVpa(),
+                com.rugved.paymentProject.model.Notification.NotificationType.MONEY_RECEIVED,
+                transaction.getTransactionId()
+            );
+
+            return CompletableFuture.completedFuture(TransactionResponse.fromTransaction(transaction));
+        } catch (Exception e) {
+            log.error("Transaction Failed: {}", e.getMessage());
+            Transaction failedTransaction = createFailedTransaction(request, userId, e.getMessage());
+            
+            // Notify sender about failed transaction
+            notificationService.createNotification(
+                userId,
+                "Transaction Failed",
+                "Failed to send ₹" + request.getAmount() + " to " + request.getRecieverVpa() + ". Reason: " + e.getMessage(),
+                com.rugved.paymentProject.model.Notification.NotificationType.TRANSACTION_FAILED,
+                failedTransaction.getTransactionId()
+            );
+            
             return CompletableFuture.completedFuture(TransactionResponse.fromTransaction(failedTransaction));
         }
     }
 
     @Transactional
-    protected void performFundTransfer(BankAccount senderAccount, VirtualPaymentAddress recieverVpa, BigDecimal amount) {
-//        debit sender
-        senderAccount.setBalance(senderAccount.getBalance().subtract(amount));
-        bankAccountRepository.save(senderAccount);
+    protected void performFundTransfer(com.rugved.paymentProject.model.Wallet senderWallet, 
+                                      VirtualPaymentAddress receiverVpa, BigDecimal amount) {
+        // Debit sender wallet
+        senderWallet.debit(amount);
+        walletRepository.save(senderWallet);
 
-//        credit receiver
-        BankAccount recieverAccount = recieverVpa.getBankAccount();
-        if (recieverAccount != null) {
-            recieverAccount.setBalance(recieverAccount.getBalance().add(amount));
-            bankAccountRepository.save(recieverAccount);
-        }
+        // Credit receiver wallet
+        var receiverWallet = walletRepository.findByUserId(receiverVpa.getUser().getId())
+                .orElseThrow(() -> new com.rugved.paymentProject.exception.BusinessException("Receiver wallet not found", 
+                    com.rugved.paymentProject.exception.BusinessException.ErrorCodes.WALLET_NOT_FOUND));
+        
+        receiverWallet.credit(amount);
+        walletRepository.save(receiverWallet);
     }
 
     private Transaction createFailedTransaction(TransactionRequest request, Long userId, String errorMessage) {

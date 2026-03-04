@@ -17,7 +17,5 @@ public class VpaRequest {
     @Pattern(regexp = "^[a-zA-Z0-9._-]+$", message = "VPA can only contain letters, numbers, dots, underscores and hyphens")
     private String Vpa;
 
-    private Long bankAccountId;
-
     private Boolean isPrimary = false;
 }

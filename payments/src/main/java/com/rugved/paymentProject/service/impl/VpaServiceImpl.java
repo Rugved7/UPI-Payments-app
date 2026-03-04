@@ -18,35 +18,40 @@ import java.util.Optional;
 public class VpaServiceImpl implements VpaService {
 
     private final VpaRepository vpaRepository;
-    private final BankAccountRepository bankAccountRepository;
+    private final com.rugved.paymentProject.repository.WalletRepository walletRepository;
+    private final com.rugved.paymentProject.repository.UserRepository userRepository;
 
     @Override
     @Transactional
     public VirtualPaymentAddress createVpa(VpaRequest vpaRequest, Long userId) {
         if (vpaRepository.existsByVpa(vpaRequest.getVpa())) {
-            throw new RuntimeException("VPA already Exists");
+            throw new com.rugved.paymentProject.exception.BusinessException("VPA already exists", 
+                com.rugved.paymentProject.exception.BusinessException.ErrorCodes.VPA_ALREADY_EXISTS);
         }
-        BankAccount bankAccount = null;
-        if (vpaRequest.getBankAccountId() != null) {
-            bankAccount = bankAccountRepository.findById(vpaRequest.getBankAccountId())
-                    .orElseThrow(() -> new RuntimeException("Bank Account not found"));
-        }
-        if (!bankAccount.getUser().getId().equals(userId)) {
-            throw new RuntimeException("Bank Account does not belong to the user");
-        }
+
+        var user = userRepository.findById(userId)
+                .orElseThrow(() -> new com.rugved.paymentProject.exception.BusinessException("User not found", 
+                    com.rugved.paymentProject.exception.BusinessException.ErrorCodes.USER_NOT_FOUND));
+
+        var wallet = walletRepository.findByUserId(userId)
+                .orElseThrow(() -> new com.rugved.paymentProject.exception.BusinessException("Wallet not found", 
+                    com.rugved.paymentProject.exception.BusinessException.ErrorCodes.WALLET_NOT_FOUND));
+
         VirtualPaymentAddress vpa = VirtualPaymentAddress.builder()
                 .vpa(vpaRequest.getVpa())
                 .isPrimary(vpaRequest.getIsPrimary())
-                .bankAccount(bankAccount)
+                .user(user)
+                .wallet(wallet)
                 .build();
 
-//       If we are setting this as primary , remove that status from other vpas
+        // If setting as primary, remove primary status from other VPAs
         if (vpaRequest.getIsPrimary()) {
             vpaRepository.findByUserIdAndIsPrimaryTrue(userId).ifPresent(existingPrimary -> {
                 existingPrimary.setIsPrimary(false);
                 vpaRepository.save(existingPrimary);
             });
         }
+        
         return vpaRepository.save(vpa);
     }
 

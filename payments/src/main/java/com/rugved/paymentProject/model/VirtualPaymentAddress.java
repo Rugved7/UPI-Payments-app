@@ -45,8 +45,8 @@ public class VirtualPaymentAddress  {
     private User user;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "bank_account_id")
-    private BankAccount bankAccount;
+    @JoinColumn(name = "wallet_id")
+    private Wallet wallet;
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)

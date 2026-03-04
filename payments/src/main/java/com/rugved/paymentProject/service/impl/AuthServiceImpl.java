@@ -22,6 +22,7 @@ public class AuthServiceImpl implements AuthService {
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
+    private final com.rugved.paymentProject.service.WalletService walletService;
 
     @Override
     @Transactional
@@ -42,7 +43,12 @@ public class AuthServiceImpl implements AuthService {
         roles.add(userRole);
         user.setRoles(roles);
 
-        return userRepository.save(user);
+        User savedUser = userRepository.save(user);
+        
+        // Create wallet for new user with initial balance
+        walletService.createWallet(savedUser.getId());
+        
+        return savedUser;
     }
 
     @Override

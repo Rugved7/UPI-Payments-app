@@ -24,5 +24,13 @@ public class BusinessException extends RuntimeException {
         public static final String VPA_NOT_FOUND = "VPA_NOT_FOUND";
         public static final String TRANSACTION_NOT_FOUND = "TRANSACTION_NOT_FOUND";
         public static final String BANK_ACCOUNT_NOT_LINKED = "BANK_ACCOUNT_NOT_LINKED";
+        public static final String WALLET_NOT_FOUND = "WALLET_NOT_FOUND";
+        public static final String WALLET_ALREADY_EXISTS = "WALLET_ALREADY_EXISTS";
+        public static final String WALLET_INACTIVE = "WALLET_INACTIVE";
+        public static final String DAILY_LIMIT_EXCEEDED = "DAILY_LIMIT_EXCEEDED";
+        public static final String TRANSACTION_LIMIT_EXCEEDED = "TRANSACTION_LIMIT_EXCEEDED";
+        public static final String USER_NOT_FOUND = "USER_NOT_FOUND";
+        public static final String VPA_ALREADY_EXISTS = "VPA_ALREADY_EXISTS";
+        public static final String PRIMARY_VPA_NOT_FOUND = "PRIMARY_VPA_NOT_FOUND";
     }
 }
