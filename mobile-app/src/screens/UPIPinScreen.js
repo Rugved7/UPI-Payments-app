@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { View, StyleSheet, ScrollView } from 'react-native';
 import { TextInput, Button, Text, Card, Snackbar } from 'react-native-paper';
+import CustomHeader from '../components/CustomHeader';
 import { upiPinAPI } from '../services/api';
+import { colors, spacing } from '../config/theme';
 
-export default function UPIPinScreen() {
+export default function UPIPinScreen({ navigation }) {
   const [pin, setPin] = useState('');
   const [oldPin, setOldPin] = useState('');
   const [newPin, setNewPin] = useState('');
@@ -58,18 +60,23 @@ export default function UPIPinScreen() {
   };
 
   return (
-    <ScrollView style={styles.container}>
-      <View style={styles.content}>
-        <Card style={styles.card}>
-          <Card.Content>
-            <Text style={styles.title}>
-              {mode === 'set' ? 'Set UPI PIN' : 'Change UPI PIN'}
-            </Text>
-            <Text style={styles.subtitle}>
-              {mode === 'set' 
-                ? 'Create a 4-digit PIN for secure transactions'
-                : 'Update your UPI PIN'}
-            </Text>
+    <View style={styles.container}>
+      <CustomHeader 
+        title="UPI PIN" 
+        onBack={() => navigation.goBack()}
+      />
+      <ScrollView style={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        <View style={styles.content}>
+          <Card style={styles.card}>
+            <Card.Content>
+              <Text style={styles.title}>
+                {mode === 'set' ? 'Set UPI PIN' : 'Change UPI PIN'}
+              </Text>
+              <Text style={styles.subtitle}>
+                {mode === 'set' 
+                  ? 'Create a 4-digit PIN for secure transactions'
+                  : 'Update your UPI PIN'}
+              </Text>
 
             {mode === 'set' ? (
               <>
@@ -169,6 +176,7 @@ export default function UPIPinScreen() {
           </Card.Content>
         </Card>
       </View>
+      </ScrollView>
 
       <Snackbar
         visible={!!error}
@@ -185,17 +193,20 @@ export default function UPIPinScreen() {
       >
         {success}
       </Snackbar>
-    </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: colors.dark.background,
+  },
+  scrollContent: {
+    flex: 1,
   },
   content: {
-    padding: 20,
+    padding: spacing.md,
   },
   card: {
     marginBottom: 20,

@@ -1,5 +1,6 @@
 package com.rugved.paymentProject.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -14,21 +15,20 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class SignupRequest {
 
+    @JsonProperty("firstName")
     @NotBlank(message = "First Name is Required")
     @Size(max = 50, message = "First name should be less than 50 Characters")
     private String firstname;
 
-
+    @JsonProperty("lastName")
     @NotBlank(message = "Last Name is Required")
     @Size(max = 50, message = "Last name should be less than 50 Characters")
     private String lastname;
-
 
     @NotBlank(message = "Email is Required")
     @Size(max = 50, message = "Email should be less than 50 Characters")
     @Email(message = "Email should be valid")
     private String email;
-
 
     @NotBlank(message = "Phone is Required")
     @Size(max = 15, message = "Phone should be less than 15 Characters")

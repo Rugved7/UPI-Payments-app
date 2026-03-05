@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, ScrollView, RefreshControl } from 'react-native';
 import { TextInput, Button, Text, Card, Chip, FAB, Portal, Dialog, IconButton, Snackbar } from 'react-native-paper';
+import CustomHeader from '../components/CustomHeader';
 import { vpaAPI } from '../services/api';
+import { colors, spacing } from '../config/theme';
 
-export default function VPAManagementScreen() {
+export default function VPAManagementScreen({ navigation }) {
   const [vpas, setVpas] = useState([]);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -86,13 +88,21 @@ export default function VPAManagementScreen() {
 
   return (
     <View style={styles.container}>
+      <CustomHeader 
+        title="My VPAs" 
+        onBack={() => navigation.goBack()}
+      />
       <ScrollView
+        showsVerticalScrollIndicator={false}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          <RefreshControl 
+            refreshing={refreshing} 
+            onRefresh={onRefresh}
+            colors={[colors.dark.primary]}
+          />
         }
       >
         <View style={styles.content}>
-          <Text style={styles.title}>My VPAs</Text>
           <Text style={styles.subtitle}>
             Virtual Payment Addresses for receiving money
           </Text>

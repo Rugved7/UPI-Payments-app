@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { View, StyleSheet, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
-import { TextInput, Button, Text, Snackbar, IconButton } from 'react-native-paper';
-import { LinearGradient } from 'expo-linear-gradient';
+import { TextInput, Button, Text, Snackbar, IconButton, Chip } from 'react-native-paper';
+import CustomHeader from '../components/CustomHeader';
 import { paymentRequestAPI, vpaAPI } from '../services/api';
+import { colors, spacing } from '../config/theme';
 
 export default function RequestMoneyScreen({ navigation }) {
   const [payerVpa, setPayerVpa] = useState('');
@@ -83,99 +84,160 @@ export default function RequestMoneyScreen({ navigation }) {
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-      <LinearGradient
-        colors={['#6200ee', '#7c3aed']}
-        style={styles.header}
-      >
-        <IconButton 
-          icon="arrow-left" 
-          size={24} 
-          iconColor="#fff" 
-          onPress={() => navigation.goBack()}
-        />
-        <Text style={styles.headerTitle}>Request Money</Text>
-        <View style={{ width: 40 }} />
-      </LinearGradient>
+      <CustomHeader 
+        title="Request Money" 
+        onBack={() => navigation.goBack()}
+      />
 
-      <ScrollView style={styles.content}>
-        <View style={styles.card}>
-          <View style={styles.inputContainer}>
-            <IconButton icon="account-circle" size={24} iconColor="#6200ee" />
-            <TextInput
-              label="From VPA"
-              value={payerVpa}
-              onChangeText={handleVpaChange}
-              mode="flat"
-              autoCapitalize="none"
-              placeholder="friend@paytm"
-              style={styles.input}
-              underlineColor="transparent"
-              activeUnderlineColor="transparent"
-            />
-          </View>
+      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        {/* VPA Input */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>From</Text>
+          <View style={styles.card}>
+            <View style={styles.inputRow}>
+              <View style={styles.iconContainer}>
+                <IconButton 
+                  icon="account-circle" 
+                  size={20} 
+                  iconColor={colors.dark.primary}
+                  style={{ margin: 0 }}
+                />
+              </View>
+              <TextInput
+                label="Payer VPA"
+                value={payerVpa}
+                onChangeText={handleVpaChange}
+                mode="flat"
+                autoCapitalize="none"
+                placeholder="friend@paytm"
+                style={styles.input}
+                textColor={colors.dark.text}
+                theme={{ colors: { onSurfaceVariant: colors.dark.textSecondary } }}
+                underlineColor="transparent"
+                activeUnderlineColor="transparent"
+              />
+            </View>
 
-          {payerVpa && !vpaVerified && (
-            <Button 
-              mode="outlined" 
-              onPress={handleVerifyVpa}
-              loading={verifying}
-              style={styles.verifyButton}
-              icon="shield-check"
-            >
-              Verify VPA
-            </Button>
-          )}
+            {payerVpa && !vpaVerified && (
+              <Button 
+                mode="outlined" 
+                onPress={handleVerifyVpa}
+                loading={verifying}
+                style={styles.verifyButton}
+                textColor={colors.dark.primary}
+                icon="shield-check"
+              >
+                Verify VPA
+              </Button>
+            )}
 
-          <View style={styles.inputContainer}>
-            <IconButton icon="currency-inr" size={24} iconColor="#6200ee" />
-            <TextInput
-              label="Amount"
-              value={amount}
-              onChangeText={setAmount}
-              mode="flat"
-              keyboardType="numeric"
-              placeholder="0.00"
-              style={styles.input}
-              underlineColor="transparent"
-              activeUnderlineColor="transparent"
-            />
-          </View>
-
-          <View style={styles.inputContainer}>
-            <IconButton icon="message-text" size={24} iconColor="#6200ee" />
-            <TextInput
-              label="Description (Optional)"
-              value={description}
-              onChangeText={setDescription}
-              mode="flat"
-              placeholder="What's this for?"
-              style={styles.input}
-              underlineColor="transparent"
-              activeUnderlineColor="transparent"
-            />
+            {vpaVerified && (
+              <View style={styles.verifiedContainer}>
+                <Chip 
+                  icon="check-circle" 
+                  mode="flat"
+                  style={styles.verifiedChip}
+                  textStyle={styles.verifiedText}
+                >
+                  VPA Verified
+                </Chip>
+              </View>
+            )}
           </View>
         </View>
 
-        <Button 
-          mode="contained" 
-          onPress={handleRequestMoney}
-          loading={loading}
-          disabled={!vpaVerified}
-          style={styles.button}
-          contentStyle={styles.buttonContent}
-          labelStyle={styles.buttonLabel}
-        >
-          Send Request
-        </Button>
+        {/* Amount Input */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Amount</Text>
+          <View style={styles.card}>
+            <View style={styles.inputRow}>
+              <View style={styles.iconContainer}>
+                <IconButton 
+                  icon="currency-inr" 
+                  size={20} 
+                  iconColor={colors.dark.primary}
+                  style={{ margin: 0 }}
+                />
+              </View>
+              <TextInput
+                label="Enter Amount"
+                value={amount}
+                onChangeText={setAmount}
+                mode="flat"
+                keyboardType="numeric"
+                placeholder="0.00"
+                style={styles.input}
+                textColor={colors.dark.text}
+                theme={{ colors: { onSurfaceVariant: colors.dark.textSecondary } }}
+                underlineColor="transparent"
+                activeUnderlineColor="transparent"
+              />
+            </View>
+          </View>
+        </View>
 
+        {/* Description Input */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Note (Optional)</Text>
+          <View style={styles.card}>
+            <View style={styles.inputRow}>
+              <View style={styles.iconContainer}>
+                <IconButton 
+                  icon="message-text" 
+                  size={20} 
+                  iconColor={colors.dark.primary}
+                  style={{ margin: 0 }}
+                />
+              </View>
+              <TextInput
+                label="Description"
+                value={description}
+                onChangeText={setDescription}
+                mode="flat"
+                placeholder="What's this for?"
+                style={styles.input}
+                textColor={colors.dark.text}
+                theme={{ colors: { onSurfaceVariant: colors.dark.textSecondary } }}
+                underlineColor="transparent"
+                activeUnderlineColor="transparent"
+                multiline
+              />
+            </View>
+          </View>
+        </View>
+
+        {/* Info Box */}
         <View style={styles.infoBox}>
-          <IconButton icon="information" size={20} iconColor="#6200ee" />
+          <IconButton 
+            icon="information" 
+            size={20} 
+            iconColor={colors.dark.info}
+            style={{ margin: 0 }}
+          />
           <Text style={styles.infoText}>
             {vpaVerified 
               ? 'VPA verified. You can send the request.' 
               : 'Please verify the payer VPA before proceeding.'}
           </Text>
         </View>
+
+        {/* Send Button */}
+        <Button 
+          mode="contained" 
+          onPress={handleRequestMoney}
+          loading={loading}
+          disabled={!vpaVerified}
+          style={styles.button}
+          buttonColor={colors.dark.primary}
+          textColor={colors.dark.background}
+          contentStyle={styles.buttonContent}
+          labelStyle={styles.buttonLabel}
+          icon="send"
+        >
+          Send Request
+        </Button>
+
+        <View style={{ height: 32 }} />
       </ScrollView>
 
       <Snackbar
@@ -202,82 +264,93 @@ export default function RequestMoneyScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingTop: 20,
-    paddingBottom: 20,
-    paddingHorizontal: 8,
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#fff',
+    backgroundColor: colors.dark.background,
   },
   content: {
     flex: 1,
-    padding: 20,
+    padding: spacing.md,
+  },
+  section: {
+    marginBottom: spacing.lg,
+  },
+  sectionTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.dark.textSecondary,
+    marginBottom: spacing.sm,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   card: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.dark.surface,
     borderRadius: 16,
-    padding: 8,
-    marginBottom: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 3,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: colors.dark.border,
   },
-  inputContainer: {
+  inputRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    paddingHorizontal: spacing.sm,
+  },
+  iconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: colors.dark.cardElevated,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   input: {
     flex: 1,
-    backgroundColor: 'transparent',
+    backgroundColor: colors.dark.surface,
   },
   verifyButton: {
-    marginTop: 12,
-    marginHorizontal: 16,
-    marginBottom: 8,
-    borderColor: '#6200ee',
+    margin: spacing.md,
+    borderColor: colors.dark.primary,
   },
-  button: {
-    borderRadius: 12,
-    marginTop: 10,
-    backgroundColor: '#6200ee',
+  verifiedContainer: {
+    padding: spacing.md,
+    alignItems: 'center',
   },
-  buttonContent: {
-    paddingVertical: 8,
+  verifiedChip: {
+    backgroundColor: colors.dark.success,
   },
-  buttonLabel: {
-    fontSize: 16,
+  verifiedText: {
+    color: colors.dark.background,
     fontWeight: '600',
   },
   infoBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f0f0ff',
+    backgroundColor: colors.dark.cardElevated,
     borderRadius: 12,
-    padding: 12,
-    marginTop: 20,
+    padding: spacing.md,
+    marginBottom: spacing.lg,
+    borderWidth: 1,
+    borderColor: colors.dark.border,
   },
   infoText: {
     flex: 1,
     fontSize: 13,
-    color: '#666',
-    marginLeft: 8,
+    color: colors.dark.textSecondary,
+    marginLeft: spacing.sm,
+    lineHeight: 18,
+  },
+  button: {
+    borderRadius: 12,
+  },
+  buttonContent: {
+    paddingVertical: spacing.sm,
+  },
+  buttonLabel: {
+    fontSize: 16,
+    fontWeight: '600',
   },
   errorSnackbar: {
-    backgroundColor: '#f44336',
+    backgroundColor: colors.dark.error,
   },
   successSnackbar: {
-    backgroundColor: '#4caf50',
+    backgroundColor: colors.dark.success,
   },
 });

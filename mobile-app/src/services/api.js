@@ -1,9 +1,18 @@
 import axios from 'axios';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
 
-// Change this to your backend URL
-const API_BASE_URL = 'http://localhost:8080/api/v1';
+// For Android emulator, use your machine's IP address
+const getBaseURL = () => {
+  if (Platform.OS === 'android') {
+    return 'http://192.168.1.6:8080/api/v1';
+  }
+  return 'http://localhost:8080/api/v1';
+};
+
+const API_BASE_URL = getBaseURL();
+
+console.log('API Base URL:', API_BASE_URL);
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -19,7 +28,7 @@ api.interceptors.request.use(
     if (Platform.OS === 'web') {
       token = localStorage.getItem('token');
     } else {
-      token = await AsyncStorage.getItem('token');
+      token = await SecureStore.getItemAsync('token');
     }
     
     if (token) {

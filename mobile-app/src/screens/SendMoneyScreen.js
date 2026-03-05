@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, StyleSheet, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
-import { TextInput, Button, Text, Snackbar, Dialog, Portal, Chip } from 'react-native-paper';
+import { TextInput, Button, Text, Snackbar } from 'react-native-paper';
 import CustomHeader from '../components/CustomHeader';
 import { transactionAPI, vpaAPI } from '../services/api';
 import { colors, spacing } from '../config/theme';
@@ -9,13 +9,9 @@ export default function SendMoneyScreen({ navigation }) {
   const [receiverVpa, setReceiverVpa] = useState('');
   const [amount, setAmount] = useState('');
   const [description, setDescription] = useState('');
-  const [upiPin, setUpiPin] = useState('');
-  const [loading, setLoading] = useState(false);
   const [verifying, setVerifying] = useState(false);
   const [vpaVerified, setVpaVerified] = useState(false);
   const [error, setError] = useState('');
-  const [showPinDialog, setShowPinDialog] = useState(false);
-  const [success, setSuccess] = useState('');
 
   const handleVerifyVpa = async () => {
     if (!receiverVpa) {
@@ -59,38 +55,24 @@ export default function SendMoneyScreen({ navigation }) {
       return;
     }
 
-    setShowPinDialog(true);
-  };
+    // Navigate to payment confirm screen
+    navigation.navigate('PaymentConfirm', {
+      receiverVpa,
+      amount: parseFloat(amount),
+      description,
+      onSuccess: async (upiPin) => {
+        const response = await transactionAPI.transfer({
+          recieverVpa: receiverVpa,
+          amount: parseFloat(amount),
+          description,
+          upiPin,
+        });
 
-  const handleSendMoney = async () => {
-    if (!upiPin || upiPin.length !== 4) {
-      setError('Please enter 4-digit UPI PIN');
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const response = await transactionAPI.transfer({
-        recieverVpa: receiverVpa,
-        amount: parseFloat(amount),
-        description,
-        upiPin,
-      });
-
-      setLoading(false);
-      setShowPinDialog(false);
-
-      if (response.data.success) {
-        setSuccess('Money sent successfully!');
-        setTimeout(() => navigation.goBack(), 2000);
-      } else {
-        setError(response.data.message);
-      }
-    } catch (error) {
-      setLoading(false);
-      setShowPinDialog(false);
-      setError(error.response?.data?.message || 'Transaction failed');
-    }
+        if (!response.data.success) {
+          throw new Error(response.data.message || 'Transaction failed');
+        }
+      },
+    });
   };
 
   const handleVpaChange = (text) => {
@@ -189,52 +171,6 @@ export default function SendMoneyScreen({ navigation }) {
         )}
       </ScrollView>
 
-      <Portal>
-        <Dialog 
-          visible={showPinDialog} 
-          onDismiss={() => setShowPinDialog(false)}
-          style={styles.dialog}
-        >
-          <Dialog.Title style={styles.dialogTitle}>Enter UPI PIN</Dialog.Title>
-          <Dialog.Content>
-            <View style={styles.confirmBox}>
-              <Text style={styles.confirmLabel}>Paying to</Text>
-              <Text style={styles.confirmVpa}>{receiverVpa}</Text>
-              <Text style={styles.confirmAmount}>
-                ₹{parseFloat(amount || 0).toLocaleString('en-IN')}
-              </Text>
-            </View>
-            <TextInput
-              label="UPI PIN"
-              value={upiPin}
-              onChangeText={setUpiPin}
-              mode="outlined"
-              secureTextEntry
-              keyboardType="numeric"
-              maxLength={4}
-              style={styles.pinInput}
-              outlineColor={colors.dark.border}
-              activeOutlineColor={colors.dark.primary}
-              textColor={colors.dark.text}
-              theme={{ colors: { onSurfaceVariant: colors.dark.textSecondary } }}
-            />
-          </Dialog.Content>
-          <Dialog.Actions>
-            <Button onPress={() => setShowPinDialog(false)} textColor={colors.dark.textSecondary}>
-              Cancel
-            </Button>
-            <Button 
-              onPress={handleSendMoney} 
-              loading={loading}
-              mode="contained"
-              buttonColor={colors.dark.primary}
-            >
-              Pay Now
-            </Button>
-          </Dialog.Actions>
-        </Dialog>
-      </Portal>
-
       <Snackbar
         visible={!!error}
         onDismiss={() => setError('')}
@@ -242,15 +178,6 @@ export default function SendMoneyScreen({ navigation }) {
         style={{ backgroundColor: colors.dark.error }}
       >
         {error}
-      </Snackbar>
-
-      <Snackbar
-        visible={!!success}
-        onDismiss={() => setSuccess('')}
-        duration={3000}
-        style={{ backgroundColor: colors.dark.success }}
-      >
-        {success}
       </Snackbar>
     </KeyboardAvoidingView>
   );
@@ -296,41 +223,5 @@ const styles = StyleSheet.create({
   infoText: {
     fontSize: 14,
     color: colors.dark.textSecondary,
-  },
-  dialog: {
-    backgroundColor: colors.dark.surface,
-    borderRadius: 20,
-  },
-  dialogTitle: {
-    textAlign: 'center',
-    fontSize: 20,
-    fontWeight: '600',
-    color: colors.dark.text,
-  },
-  confirmBox: {
-    backgroundColor: colors.dark.cardElevated,
-    borderRadius: 12,
-    padding: spacing.md,
-    marginBottom: spacing.md,
-    alignItems: 'center',
-  },
-  confirmLabel: {
-    fontSize: 14,
-    color: colors.dark.textSecondary,
-  },
-  confirmVpa: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.dark.text,
-    marginTop: 4,
-  },
-  confirmAmount: {
-    fontSize: 32,
-    fontWeight: '700',
-    color: colors.dark.primary,
-    marginTop: spacing.sm,
-  },
-  pinInput: {
-    backgroundColor: colors.dark.surface,
   },
 });

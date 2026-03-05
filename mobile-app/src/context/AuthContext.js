@@ -1,29 +1,29 @@
 import React, { createContext, useState, useEffect } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as SecureStore from 'expo-secure-store';
 import { authAPI } from '../services/api';
 import { Platform } from 'react-native';
 
-// Use localStorage for web, AsyncStorage for mobile
+// Use SecureStore for native, localStorage for web
 const storage = {
   getItem: async (key) => {
     if (Platform.OS === 'web') {
       return localStorage.getItem(key);
     }
-    return AsyncStorage.getItem(key);
+    return await SecureStore.getItemAsync(key);
   },
   setItem: async (key, value) => {
     if (Platform.OS === 'web') {
       localStorage.setItem(key, value);
       return;
     }
-    return AsyncStorage.setItem(key, value);
+    return await SecureStore.setItemAsync(key, value);
   },
   removeItem: async (key) => {
     if (Platform.OS === 'web') {
       localStorage.removeItem(key);
       return;
     }
-    return AsyncStorage.removeItem(key);
+    return await SecureStore.deleteItemAsync(key);
   },
 };
 
@@ -56,7 +56,10 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     try {
+      console.log('Attempting login with:', email);
       const response = await authAPI.login({ email, password });
+      console.log('Login response:', response.data);
+      
       const { token: newToken, id, email: userEmail, roles } = response.data;
       
       const userData = { id, email: userEmail, roles };
@@ -69,21 +72,29 @@ export const AuthProvider = ({ children }) => {
       
       return { success: true };
     } catch (error) {
+      console.error('Login error:', error);
+      console.error('Error response:', error.response?.data);
+      console.error('Error message:', error.message);
       return { 
         success: false, 
-        message: error.response?.data?.message || 'Login failed' 
+        message: error.response?.data?.message || error.message || 'Login failed' 
       };
     }
   };
 
   const signup = async (data) => {
     try {
-      await authAPI.signup(data);
+      console.log('Attempting signup with:', data);
+      const response = await authAPI.signup(data);
+      console.log('Signup response:', response.data);
       return { success: true };
     } catch (error) {
+      console.error('Signup error:', error);
+      console.error('Error response:', error.response?.data);
+      console.error('Error message:', error.message);
       return { 
         success: false, 
-        message: error.response?.data?.message || 'Signup failed' 
+        message: error.response?.data?.message || error.message || 'Signup failed' 
       };
     }
   };

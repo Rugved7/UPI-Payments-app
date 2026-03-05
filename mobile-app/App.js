@@ -15,6 +15,8 @@ import HomeScreen from './src/screens/HomeScreen';
 import SendMoneyScreen from './src/screens/SendMoneyScreen';
 import RequestMoneyScreen from './src/screens/RequestMoneyScreen';
 import PaymentRequestsScreen from './src/screens/PaymentRequestsScreen';
+import PaymentConfirmScreen from './src/screens/PaymentConfirmScreen';
+import PaymentSuccessScreen from './src/screens/PaymentSuccessScreen';
 import ProfileScreen from './src/screens/ProfileScreen';
 import VPAManagementScreen from './src/screens/VPAManagementScreen';
 import UPIPinScreen from './src/screens/UPIPinScreen';
@@ -100,6 +102,19 @@ function AppNavigator() {
                 name="PaymentRequests" 
                 component={PaymentRequestsScreen}
                 options={{ headerShown: false }}
+              />
+              <Stack.Screen 
+                name="PaymentConfirm" 
+                component={PaymentConfirmScreen}
+                options={{ headerShown: false }}
+              />
+              <Stack.Screen 
+                name="PaymentSuccess" 
+                component={PaymentSuccessScreen}
+                options={{ 
+                  headerShown: false,
+                  gestureEnabled: false,
+                }}
               />
               <Stack.Screen 
                 name="Profile" 

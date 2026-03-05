@@ -1,17 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, ScrollView, RefreshControl } from 'react-native';
-import { Text, Card, Button, Chip, IconButton, Dialog, Portal, TextInput, SegmentedButtons } from 'react-native-paper';
-import { LinearGradient } from 'expo-linear-gradient';
+import { Text, Button, IconButton, SegmentedButtons } from 'react-native-paper';
+import CustomHeader from '../components/CustomHeader';
 import { paymentRequestAPI } from '../services/api';
+import { colors, spacing } from '../config/theme';
 
 export default function PaymentRequestsScreen({ navigation }) {
   const [requests, setRequests] = useState([]);
   const [filter, setFilter] = useState('all');
   const [refreshing, setRefreshing] = useState(false);
-  const [showPinDialog, setShowPinDialog] = useState(false);
-  const [selectedRequest, setSelectedRequest] = useState(null);
-  const [upiPin, setUpiPin] = useState('');
-  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     loadRequests();
@@ -41,26 +38,17 @@ export default function PaymentRequestsScreen({ navigation }) {
   };
 
   const handleAccept = (request) => {
-    setSelectedRequest(request);
-    setShowPinDialog(true);
-  };
-
-  const handleConfirmAccept = async () => {
-    if (!upiPin || upiPin.length !== 4) {
-      return;
-    }
-
-    setLoading(true);
-    try {
-      await paymentRequestAPI.accept(selectedRequest.requestId, upiPin);
-      setShowPinDialog(false);
-      setUpiPin('');
-      await loadRequests();
-    } catch (error) {
-      console.error('Error accepting request:', error);
-    } finally {
-      setLoading(false);
-    }
+    navigation.navigate('PaymentConfirm', {
+      receiverVpa: request.requesterVpa,
+      amount: parseFloat(request.amount),
+      description: request.description || 'Payment request',
+      onSuccess: async (upiPin) => {
+        const response = await paymentRequestAPI.accept(request.requestId, upiPin);
+        if (!response.data.success) {
+          throw new Error(response.data.message || 'Payment failed');
+        }
+      },
+    });
   };
 
   const handleReject = async (requestId) => {
@@ -74,11 +62,21 @@ export default function PaymentRequestsScreen({ navigation }) {
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'COMPLETED': return '#4caf50';
-      case 'PENDING': return '#ff9800';
-      case 'REJECTED': return '#f44336';
-      case 'EXPIRED': return '#9e9e9e';
-      default: return '#666';
+      case 'COMPLETED': return colors.dark.success;
+      case 'PENDING': return colors.dark.warning;
+      case 'REJECTED': return colors.dark.error;
+      case 'EXPIRED': return colors.dark.textSecondary;
+      default: return colors.dark.textTertiary;
+    }
+  };
+
+  const getStatusIcon = (status) => {
+    switch (status) {
+      case 'COMPLETED': return 'check-circle';
+      case 'PENDING': return 'clock-outline';
+      case 'REJECTED': return 'close-circle';
+      case 'EXPIRED': return 'timer-off';
+      default: return 'help-circle';
     }
   };
 
@@ -95,144 +93,121 @@ export default function PaymentRequestsScreen({ navigation }) {
 
   return (
     <View style={styles.container}>
-      <LinearGradient
-        colors={['#6200ee', '#7c3aed']}
-        style={styles.header}
-      >
-        <IconButton 
-          icon="arrow-left" 
-          size={24} 
-          iconColor="#fff" 
-          onPress={() => navigation.goBack()}
-        />
-        <Text style={styles.headerTitle}>Payment Requests</Text>
-        <View style={{ width: 40 }} />
-      </LinearGradient>
+      <CustomHeader 
+        title="Payment Requests" 
+        onBack={() => navigation.goBack()}
+      />
 
       <View style={styles.filterContainer}>
         <SegmentedButtons
           value={filter}
           onValueChange={setFilter}
           buttons={[
-            { value: 'all', label: 'All' },
-            { value: 'sent', label: 'Sent' },
-            { value: 'received', label: 'Received' },
+            { value: 'all', label: 'All', icon: 'format-list-bulleted' },
+            { value: 'sent', label: 'Sent', icon: 'arrow-up' },
+            { value: 'received', label: 'Received', icon: 'arrow-down' },
           ]}
           style={styles.segmentedButtons}
+          theme={{ colors: { secondaryContainer: colors.dark.primary, onSecondaryContainer: colors.dark.background } }}
         />
       </View>
 
       <ScrollView
+        showsVerticalScrollIndicator={false}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[colors.dark.primary]} />
         }
       >
         <View style={styles.content}>
           {!requests || requests.length === 0 ? (
-            <Card style={styles.emptyCard}>
-              <Card.Content>
-                <Text style={styles.emptyText}>No requests found</Text>
-              </Card.Content>
-            </Card>
+            <View style={styles.emptyContainer}>
+              <IconButton 
+                icon="inbox-outline" 
+                size={64} 
+                iconColor={colors.dark.textSecondary}
+                style={{ margin: 0 }}
+              />
+              <Text style={styles.emptyText}>No requests found</Text>
+              <Text style={styles.emptySubtext}>
+                {filter === 'sent' ? 'You haven\'t sent any requests yet' : 
+                 filter === 'received' ? 'You haven\'t received any requests yet' : 
+                 'No payment requests to show'}
+              </Text>
+            </View>
           ) : (
             requests.map((request) => (
-              <Card key={request.id} style={styles.requestCard}>
-                <Card.Content>
-                  <View style={styles.requestHeader}>
-                    <View style={styles.requestInfo}>
-                      <Text style={styles.requestAmount}>
-                        ₹{parseFloat(request.amount).toLocaleString('en-IN')}
-                      </Text>
-                      <Chip 
-                        mode="flat" 
-                        style={[styles.statusChip, { backgroundColor: getStatusColor(request.status) }]}
-                        textStyle={styles.statusText}
-                      >
-                        {request.status}
-                      </Chip>
-                    </View>
+              <View key={request.id} style={styles.requestCard}>
+                <View style={styles.cardHeader}>
+                  <View style={styles.iconContainer}>
+                    <IconButton 
+                      icon={filter === 'sent' ? 'arrow-up' : 'arrow-down'} 
+                      size={20} 
+                      iconColor={colors.dark.primary}
+                      style={{ margin: 0 }}
+                    />
                   </View>
-
-                  <View style={styles.requestDetails}>
-                    <Text style={styles.detailLabel}>
-                      {filter === 'sent' || request.requesterVpa ? 'To: ' : 'From: '}
-                      <Text style={styles.detailValue}>
-                        {filter === 'sent' ? request.payerVpa : request.requesterVpa}
-                      </Text>
+                  <View style={styles.headerContent}>
+                    <Text style={styles.vpaText}>
+                      {filter === 'sent' ? request.payerVpa : request.requesterVpa}
                     </Text>
-                    {request.description && (
-                      <Text style={styles.description}>{request.description}</Text>
-                    )}
-                    <Text style={styles.date}>{formatDate(request.createdAt)}</Text>
+                    <Text style={styles.dateText}>{formatDate(request.createdAt)}</Text>
                   </View>
+                  <View style={styles.statusContainer}>
+                    <IconButton 
+                      icon={getStatusIcon(request.status)} 
+                      size={16} 
+                      iconColor={getStatusColor(request.status)}
+                      style={{ margin: 0 }}
+                    />
+                    <Text style={[styles.statusText, { color: getStatusColor(request.status) }]}>
+                      {request.status}
+                    </Text>
+                  </View>
+                </View>
 
-                  {request.status === 'PENDING' && filter !== 'sent' && (
-                    <View style={styles.actions}>
-                      <Button 
-                        mode="contained" 
-                        onPress={() => handleAccept(request)}
-                        style={styles.acceptButton}
-                      >
-                        Accept & Pay
-                      </Button>
-                      <Button 
-                        mode="outlined" 
-                        onPress={() => handleReject(request.requestId)}
-                        style={styles.rejectButton}
-                        textColor="#f44336"
-                      >
-                        Reject
-                      </Button>
-                    </View>
-                  )}
-                </Card.Content>
-              </Card>
+                <View style={styles.amountContainer}>
+                  <Text style={styles.amountLabel}>Amount</Text>
+                  <Text style={styles.amountValue}>
+                    ₹{parseFloat(request.amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                  </Text>
+                </View>
+
+                {request.description && (
+                  <View style={styles.descriptionContainer}>
+                    <Text style={styles.descriptionLabel}>Note</Text>
+                    <Text style={styles.descriptionText}>{request.description}</Text>
+                  </View>
+                )}
+
+                {request.status === 'PENDING' && filter !== 'sent' && (
+                  <View style={styles.actions}>
+                    <Button 
+                      mode="contained" 
+                      onPress={() => handleAccept(request)}
+                      style={styles.acceptButton}
+                      buttonColor={colors.dark.primary}
+                      textColor={colors.dark.background}
+                      icon="check"
+                    >
+                      Accept & Pay
+                    </Button>
+                    <Button 
+                      mode="outlined" 
+                      onPress={() => handleReject(request.requestId)}
+                      style={styles.rejectButton}
+                      textColor={colors.dark.error}
+                      icon="close"
+                    >
+                      Reject
+                    </Button>
+                  </View>
+                )}
+              </View>
             ))
           )}
         </View>
+        <View style={{ height: 32 }} />
       </ScrollView>
-
-      <Portal>
-        <Dialog visible={showPinDialog} onDismiss={() => setShowPinDialog(false)} style={styles.dialog}>
-          <Dialog.Title style={styles.dialogTitle}>Enter UPI PIN</Dialog.Title>
-          <Dialog.Content>
-            {selectedRequest && (
-              <View style={styles.confirmBox}>
-                <Text style={styles.confirmLabel}>Paying to</Text>
-                <Text style={styles.confirmVpa}>{selectedRequest.requesterVpa}</Text>
-                <Text style={styles.confirmAmount}>
-                  ₹{parseFloat(selectedRequest.amount).toLocaleString('en-IN')}
-                </Text>
-              </View>
-            )}
-            <TextInput
-              label="UPI PIN"
-              value={upiPin}
-              onChangeText={setUpiPin}
-              mode="outlined"
-              secureTextEntry
-              keyboardType="numeric"
-              maxLength={4}
-              style={styles.pinInput}
-              outlineColor="#e0e0e0"
-              activeOutlineColor="#6200ee"
-            />
-          </Dialog.Content>
-          <Dialog.Actions>
-            <Button onPress={() => setShowPinDialog(false)} textColor="#666">
-              Cancel
-            </Button>
-            <Button 
-              onPress={handleConfirmAccept} 
-              loading={loading}
-              mode="contained"
-              style={styles.payButton}
-            >
-              Pay Now
-            </Button>
-          </Dialog.Actions>
-        </Dialog>
-      </Portal>
     </View>
   );
 }
@@ -240,138 +215,128 @@ export default function PaymentRequestsScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingTop: 20,
-    paddingBottom: 20,
-    paddingHorizontal: 8,
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#fff',
+    backgroundColor: colors.dark.background,
   },
   filterContainer: {
-    padding: 16,
-    backgroundColor: '#fff',
+    padding: spacing.md,
+    backgroundColor: colors.dark.surface,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.dark.border,
   },
   segmentedButtons: {
-    backgroundColor: '#f8f9fa',
+    backgroundColor: colors.dark.cardElevated,
   },
   content: {
-    padding: 16,
+    padding: spacing.md,
   },
-  emptyCard: {
-    marginTop: 20,
+  emptyContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: spacing.xxl * 2,
   },
   emptyText: {
-    fontSize: 16,
+    fontSize: 18,
+    fontWeight: '600',
+    color: colors.dark.text,
+    marginTop: spacing.md,
+  },
+  emptySubtext: {
+    fontSize: 14,
+    color: colors.dark.textSecondary,
+    marginTop: spacing.sm,
     textAlign: 'center',
-    color: '#666',
   },
   requestCard: {
-    marginBottom: 12,
+    backgroundColor: colors.dark.surface,
+    borderRadius: 16,
+    padding: spacing.md,
+    marginBottom: spacing.md,
+    borderWidth: 1,
+    borderColor: colors.dark.border,
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: spacing.md,
+  },
+  iconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: colors.dark.cardElevated,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  headerContent: {
+    flex: 1,
+    marginLeft: spacing.md,
+  },
+  vpaText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.dark.text,
+  },
+  dateText: {
+    fontSize: 12,
+    color: colors.dark.textSecondary,
+    marginTop: 2,
+  },
+  statusContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.dark.cardElevated,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
     borderRadius: 12,
   },
-  requestHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  requestInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  requestAmount: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#1a1a1a',
-  },
-  statusChip: {
-    height: 28,
-  },
   statusText: {
-    color: '#fff',
-    fontSize: 11,
-    fontWeight: '600',
-  },
-  requestDetails: {
-    marginBottom: 12,
-  },
-  detailLabel: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 4,
-  },
-  detailValue: {
-    fontWeight: '600',
-    color: '#1a1a1a',
-  },
-  description: {
-    fontSize: 14,
-    color: '#666',
-    marginTop: 4,
-  },
-  date: {
     fontSize: 12,
-    color: '#999',
-    marginTop: 8,
+    fontWeight: '600',
+    marginLeft: -4,
+  },
+  amountContainer: {
+    backgroundColor: colors.dark.cardElevated,
+    borderRadius: 12,
+    padding: spacing.md,
+    marginBottom: spacing.md,
+  },
+  amountLabel: {
+    fontSize: 12,
+    color: colors.dark.textSecondary,
+    marginBottom: spacing.xs,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  amountValue: {
+    fontSize: 28,
+    fontWeight: '700',
+    color: colors.dark.primary,
+  },
+  descriptionContainer: {
+    marginBottom: spacing.md,
+  },
+  descriptionLabel: {
+    fontSize: 12,
+    color: colors.dark.textSecondary,
+    marginBottom: spacing.xs,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  descriptionText: {
+    fontSize: 14,
+    color: colors.dark.text,
+    lineHeight: 20,
   },
   actions: {
     flexDirection: 'row',
-    gap: 8,
-    marginTop: 12,
+    gap: spacing.sm,
+    marginTop: spacing.sm,
   },
   acceptButton: {
     flex: 1,
-    backgroundColor: '#6200ee',
   },
   rejectButton: {
     flex: 1,
-    borderColor: '#f44336',
-  },
-  dialog: {
-    borderRadius: 20,
-  },
-  dialogTitle: {
-    textAlign: 'center',
-    fontSize: 20,
-    fontWeight: 'bold',
-  },
-  confirmBox: {
-    backgroundColor: '#f8f9fa',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 20,
-    alignItems: 'center',
-  },
-  confirmLabel: {
-    fontSize: 14,
-    color: '#666',
-  },
-  confirmVpa: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#1a1a1a',
-    marginTop: 4,
-  },
-  confirmAmount: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: '#6200ee',
-    marginTop: 8,
-  },
-  pinInput: {
-    marginTop: 10,
-    backgroundColor: '#fff',
-  },
-  payButton: {
-    marginLeft: 8,
+    borderColor: colors.dark.error,
   },
 });
