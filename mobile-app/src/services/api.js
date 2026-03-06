@@ -114,4 +114,15 @@ export const profileAPI = {
   deleteAccount: () => api.delete('/profile'),
 };
 
+// QR Code APIs
+export const qrCodeAPI = {
+  generateStatic: () => api.get('/qr/generate/static'),
+  generateDynamic: (data) => api.post('/qr/generate/dynamic', data),
+  parse: (qrData) => api.post('/qr/parse', qrData, {
+    headers: {
+      'Content-Type': 'text/plain',
+    },
+  }),
+};
+
 export default api;

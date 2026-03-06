@@ -185,6 +185,16 @@ export default function HomeScreen({ navigation }) {
           <Text style={styles.sectionTitle}>Quick Actions</Text>
           <View style={styles.actionsGrid}>
             <QuickAction 
+              icon="qrcode" 
+              label="My QR" 
+              onPress={() => navigation.navigate('QRDisplay')}
+            />
+            <QuickAction 
+              icon="qrcode-scan" 
+              label="Scan QR" 
+              onPress={() => navigation.navigate('QRScanner')}
+            />
+            <QuickAction 
               icon="file-document-outline" 
               label="Requests" 
               onPress={() => navigation.navigate('PaymentRequests')}
@@ -194,6 +204,8 @@ export default function HomeScreen({ navigation }) {
               label="History" 
               onPress={() => navigation.navigate('TransactionHistory')}
             />
+          </View>
+          <View style={[styles.actionsGrid, { marginTop: spacing.md }]}>
             <QuickAction 
               icon="account-circle-outline" 
               label="My VPAs" 
@@ -204,6 +216,8 @@ export default function HomeScreen({ navigation }) {
               label="Settings" 
               onPress={() => navigation.navigate('Profile')}
             />
+            <View style={{ width: (width - spacing.md * 2) / 4 - 4 }} />
+            <View style={{ width: (width - spacing.md * 2) / 4 - 4 }} />
           </View>
         </View>
 

@@ -17,6 +17,8 @@ import RequestMoneyScreen from './src/screens/RequestMoneyScreen';
 import PaymentRequestsScreen from './src/screens/PaymentRequestsScreen';
 import PaymentConfirmScreen from './src/screens/PaymentConfirmScreen';
 import PaymentSuccessScreen from './src/screens/PaymentSuccessScreen';
+import QRDisplayScreen from './src/screens/QRDisplayScreen';
+import QRScannerScreen from './src/screens/QRScannerScreen';
 import ProfileScreen from './src/screens/ProfileScreen';
 import VPAManagementScreen from './src/screens/VPAManagementScreen';
 import UPIPinScreen from './src/screens/UPIPinScreen';
@@ -115,6 +117,16 @@ function AppNavigator() {
                   headerShown: false,
                   gestureEnabled: false,
                 }}
+              />
+              <Stack.Screen 
+                name="QRDisplay" 
+                component={QRDisplayScreen}
+                options={{ headerShown: false }}
+              />
+              <Stack.Screen 
+                name="QRScanner" 
+                component={QRScannerScreen}
+                options={{ headerShown: false }}
               />
               <Stack.Screen 
                 name="Profile" 

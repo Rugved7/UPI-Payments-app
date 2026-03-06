@@ -1,5 +1,6 @@
 package com.rugved.paymentProject.repository;
 
+import com.rugved.paymentProject.model.User;
 import com.rugved.paymentProject.model.VirtualPaymentAddress;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -14,6 +15,7 @@ public interface VpaRepository extends JpaRepository<VirtualPaymentAddress, Long
     Optional<VirtualPaymentAddress> findByVpa(String vpa);
     List<VirtualPaymentAddress> findByUserId(Long userId);
     Optional<VirtualPaymentAddress> findByUserIdAndIsPrimaryTrue(Long userId);
+    Optional<VirtualPaymentAddress> findByUserAndIsPrimary(User user, boolean isPrimary);
     boolean existsByVpa(String Vpa);
 
     @Query("SELECT COUNT(v) > 0 FROM VirtualPaymentAddress v WHERE v.vpa = :vpa AND v.user.id != :userId")

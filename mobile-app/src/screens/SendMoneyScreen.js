@@ -5,13 +5,22 @@ import CustomHeader from '../components/CustomHeader';
 import { transactionAPI, vpaAPI } from '../services/api';
 import { colors, spacing } from '../config/theme';
 
-export default function SendMoneyScreen({ navigation }) {
-  const [receiverVpa, setReceiverVpa] = useState('');
-  const [amount, setAmount] = useState('');
-  const [description, setDescription] = useState('');
+export default function SendMoneyScreen({ navigation, route }) {
+  const { prefilledVpa, prefilledAmount, prefilledDescription, fromQR } = route.params || {};
+  
+  const [receiverVpa, setReceiverVpa] = useState(prefilledVpa || '');
+  const [amount, setAmount] = useState(prefilledAmount || '');
+  const [description, setDescription] = useState(prefilledDescription || '');
   const [verifying, setVerifying] = useState(false);
-  const [vpaVerified, setVpaVerified] = useState(false);
+  const [vpaVerified, setVpaVerified] = useState(fromQR || false);
   const [error, setError] = useState('');
+
+  // Auto-verify VPA if coming from QR scan
+  React.useEffect(() => {
+    if (fromQR && prefilledVpa) {
+      handleVerifyVpa();
+    }
+  }, [fromQR, prefilledVpa]);
 
   const handleVerifyVpa = async () => {
     if (!receiverVpa) {
